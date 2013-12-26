@@ -6,6 +6,13 @@ A minimal C++ project that might serve as a starting point for a developer creat
 
 Search and replace all instances of 'Sample' in the files.
 
+To build:
+```
+mkdir -p build
+cd build
+cmake ..
+```
+
 The project contains a sample application and static library intended to be used as templates.
 
 Global CMake variables and rules may be set in the cmake/Config.cmake file.
