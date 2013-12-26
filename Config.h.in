@@ -1,0 +1,3 @@
+#define SampleLib_VERSION_MAJOR @SampleLib_VERSION_MAJOR@
+#define SampleLib_VERSION_MINOR @SampleLib_VERSION_MINOR@
+
