@@ -4,8 +4,10 @@
 
 int main(int argc, char* argv[])
 {
- std::cout << "sample application!\n";
- 
- std::cout << " - sample lib says '" << sampleLibFunction() << "'\n";
+   (void)argc; (void)argv; // avoid 'unreferenced formal parameter' warnings
+
+   std::cout << "sample application!\n";
+
+   std::cout << " - sample lib says '" << sampleLibFunction() << "'\n";
 }
 
