@@ -1,13 +1,16 @@
 #include <iostream>
 
+#include <boost/log/trivial.hpp>
 #include "sample-lib.h"
 
 int main(int argc, char* argv[])
 {
    (void)argc; (void)argv; // avoid 'unreferenced formal parameter' warnings
 
-   std::cout << "sample application!\n";
+   std::cout << "sample application!" << std::endl;
 
-   std::cout << " - sample lib says '" << sampleLibFunction() << "'\n";
+   auto sampleReturn = sampleLibFunction();
+
+   BOOST_LOG_TRIVIAL(debug) << " - sample lib says '" << sampleReturn << "'" << std::endl;
 }
 
