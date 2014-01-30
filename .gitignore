@@ -7,3 +7,5 @@ CMakeCache.txt
 Makefile
 build
 *.swp
+*.xcodeproj
+*.user

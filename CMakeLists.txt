@@ -9,7 +9,7 @@ set (VERSION_MINOR 1)
 set (VERSION_PATCH 1)
 
 # global configuration helpers
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/Config.cmake)
 
 configure_file (
    "${PROJECT_SOURCE_DIR}/Config.h.in"
@@ -40,8 +40,13 @@ endif(Boost_FOUND)
 # child projects
 #
 
-add_subdirectory (sample-lib) 
-add_subdirectory (sample-app) 
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+add_subdirectory (pcx)
+add_subdirectory (gui)
+
+add_subdirectory (sample-lib)
+add_subdirectory (sample-app)
 
 
 #

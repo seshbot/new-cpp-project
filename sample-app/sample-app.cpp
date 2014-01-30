@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <boost/log/trivial.hpp>
-#include "sample-lib.h"
+#include <sample-lib/sample-lib.h>
 
 int main(int argc, char* argv[])
 {
