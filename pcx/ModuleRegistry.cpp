@@ -7,7 +7,8 @@ namespace pcx
    {
    }
 
-   void ModuleRegistry::startup(Configuration const & config, ServiceRegistry & services) {
+   void ModuleRegistry::startup(IConfiguration const & config, ServiceRegistry & services)
+   {
       forEach([&](Module & m){ m.startup(config, services); });
    }
 
@@ -16,7 +17,7 @@ namespace pcx
       forEach([&](Module & m){ m.shutdown(); });
    }
 
-   void ModuleRegistry::restart(Configuration const & config, ServiceRegistry & services)
+   void ModuleRegistry::restart(IConfiguration const & config, ServiceRegistry & services)
    {
       forEach([&](Module & m){ m.restart(config, services); });
    }

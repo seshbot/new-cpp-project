@@ -9,7 +9,7 @@ set (VERSION_MINOR 1)
 set (VERSION_PATCH 1)
 
 # global configuration helpers
-include(${CMAKE_SOURCE_DIR}/cmake/Config.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/ConfigCommon.cmake)
 
 configure_file (
    "${PROJECT_SOURCE_DIR}/Config.h.in"
@@ -17,24 +17,6 @@ configure_file (
 )
 
 install (FILES "${PROJECT_BINARY_DIR}/Config.h" DESTINATION include)
-
-
-#
-# dependent libraries
-#
-
-# boost
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-find_package(Threads)
-#find_package(Boost 1.53.0 COMPONENTS thread date_time filesystem system log log_setup REQUIRED)
-find_package(Boost 1.53.0 COMPONENTS log log_setup thread date_time filesystem system REQUIRED)
-if(Boost_FOUND)
-   include_directories( ${Boost_INCLUDE_DIRS} )
-   link_libraries(${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})
-else(Boost_FOUND)
-   message(FATAL_ERROR "Cannot build without Boost. Please set Boost_DIR.")
-endif(Boost_FOUND)
 
 #
 # child projects

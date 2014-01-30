@@ -17,7 +17,7 @@ namespace pcx
    class MessageBus {
    public:
       template <typename Message>
-      void subscribe(function<void(void*,Message const &)> callback) {
+      void subscribe(std::function<void(void*,Message const &)> callback) {
          auto it = publishers_.find(typeid(Message));
          if (it == publishers_.end()) {
             publishers_[typeid(Message)] = new Publisher<Message>{};

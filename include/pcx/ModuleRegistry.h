@@ -17,9 +17,9 @@ namespace pcx
    public:
       virtual ~Module() {}
 
-      virtual void startup(Configuration const & config, ServiceRegistry const & services) {}
+      virtual void startup(IConfiguration const & config, ServiceRegistry const & services) {}
       virtual void shutdown() {}
-      virtual void restart(Configuration const & config, ServiceRegistry const & services) {}
+      virtual void restart(IConfiguration const & config, ServiceRegistry const & services) {}
 
       virtual void update(double timeSinceLast) {}
    };
@@ -28,6 +28,7 @@ namespace pcx
    /**
     * @brief The ModuleRegistry class is where all modules and their dependencies are
     * registered. It coordinates modules by:
+    *  - initialising them as appropriate
     *  - starting them up, shutting them down, restarting them
     *  - providing a mechanism to express module dependencies (startup order)
     */
@@ -35,9 +36,9 @@ namespace pcx
    public:
       ~ModuleRegistry();
 
-      void startup(Configuration const & config, ServiceRegistry & services);
+      void startup(IConfiguration const & config, ServiceRegistry & services);
       void shutdown();
-      void restart(Configuration const & config, ServiceRegistry & services);
+      void restart(IConfiguration const & config, ServiceRegistry & services);
 
       void forEach(std::function<void(Module &)> func) {
          for (auto * c : modules_) func(*c);

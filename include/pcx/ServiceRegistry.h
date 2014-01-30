@@ -1,5 +1,5 @@
-#ifndef PCX_SERVICE_LOCATOR_H
-#define PCX_SERVICE_LOCATOR_H
+#ifndef PCX_SERVICE_REGISTRY_H
+#define PCX_SERVICE_REGISTRY_H
 
 #include <string>
 #include <exception>
@@ -10,6 +10,7 @@
 #include <tuple>
 #include <typeindex>
 
+#include "Utils.h"
 
 namespace pcx
 {
@@ -21,13 +22,13 @@ namespace pcx
       ServiceRegistration(ServiceRegistration const & other);
 
       template <typename TService>
-      ServiceRegistration DependsOn()
+      ServiceRegistration dependsOn()
       {
-         return DependsOn(typeid(TService));
+         return dependsOn(typeid(TService));
       }
 
    private:
-      ServiceRegistration DependsOn(std::type_info const & typeInfo);
+      ServiceRegistration dependsOn(std::type_info const & typeInfo);
 
       class Impl;
       std::shared_ptr<Impl> impl_;
@@ -38,12 +39,12 @@ namespace pcx
    public:
       ~ServiceRegistry();
 
-      void AddDependency(std::type_info const & dependent, std::type_info const & dependsOn);
+      void addDependency(std::type_info const & dependent, std::type_info const & dependsOn);
 
       template <typename TService>
-      ServiceRegistration Register()
+      ServiceRegistration add()
       {
-         return RegisterImpl<TService>(
+         return addImpl<TService>(
             [](ServiceRegistry& services)
             { 
                return new TService(services); 
@@ -55,12 +56,12 @@ namespace pcx
       }
 
       template <typename TService>
-      ServiceRegistration Register(std::unique_ptr<TService> service)
+      ServiceRegistration add(std::unique_ptr<TService> service)
       {
          TService* rawPtr = service.release();
          try
          {
-            return RegisterImpl<TService>(
+            return addImpl<TService>(
                [=](ServiceRegistry& services)
                { 
                   return rawPtr; 
@@ -78,10 +79,10 @@ namespace pcx
       }
 
       template <typename TService>
-      ServiceRegistration Register(TService & service)
+      ServiceRegistration add(TService & service)
       {
          TService* servicePtr = &service;
-         return RegisterImpl<TService>(
+         return addImpl<TService>(
             [=](ServiceRegistry& services)
             { 
                return servicePtr; 
@@ -93,65 +94,65 @@ namespace pcx
       }
 
       template <typename TService>
-      TService * GetService()
+      TService * findService()
       {
-         return GetService<TService>(typeid(TService));
+         return findService<TService>(typeid(TService));
       }
 
       template <typename TService>
-      bool ServiceExists() const
+      bool serviceExists() const
       {
-         return ServiceExists<TService>(typeid(TService));
+         return serviceExists<TService>(typeid(TService));
       }
 
    private:
-      void Initialise(std::type_index const & typeIndex);
+      void initialise(std::type_index const & typeIndex);
 
       template <typename TService, typename TFactory, typename TDeleter>
-      ServiceRegistration RegisterImpl(TFactory factory, TDeleter deleter)
+      ServiceRegistration addImpl(TFactory factory, TDeleter deleter)
       {
          auto const & typeInfo = typeid(TService);
          // delete existing data
          auto it = typedData_.find(typeInfo);
          if (it != typedData_.end())
-            throw std::runtime_error((std::string("Service '") + std::string(typeInfo.name()) + std::string("' already registered")).c_str());
+            throw std::runtime_error((std::string("Service '") + demangle_name(typeInfo.name()) + std::string("' already registered")).c_str());
 
-         typedData_[typeInfo] = CreateDataHolder<TService>(factory, deleter);
+         typedData_[typeInfo] = createDataHolder<TService>(factory, deleter);
 
          return ServiceRegistration(typeInfo, *this);
       }
 
       template <typename TService>
-      TService * GetService(std::type_info const & typeInfo)
+      TService * findService(std::type_info const & typeInfo)
       {
          if (typedData_.find(typeInfo) == typedData_.end())
          {
-            throw std::runtime_error((std::string("Service '") + typeInfo.name() + std::string("' not registered")).c_str());
+            throw std::runtime_error((std::string("Service '") + demangle_name(typeInfo.name()) + std::string("' not registered")).c_str());
          }
 
          // wont do anything if already initialised
-         Initialise(typeInfo);
+         initialise(typeInfo);
 
-         auto* service = GetDataHolderData<TService>(typedData_[typeInfo]);
+         auto* service = getDataHolderData<TService>(typedData_[typeInfo]);
          if (nullptr == service) throw std::runtime_error("Service not initialised");
          
          return service;
       }
 
       template <typename TService>
-      bool ServiceExists(std::type_info const & typeInfo) const
+      bool serviceExists(std::type_info const & typeInfo) const
       {
          return typedData_.find(typeInfo) != typedData_.end();
       }
 
       struct Initialiser
       {
-         virtual void* Initialise(ServiceRegistry& services) = 0;
+         virtual void* initialise(ServiceRegistry& services) = 0;
       };
 
       struct Deleter
       {
-         virtual void Delete(void* ptr) = 0;
+         virtual void destroy(void* ptr) = 0;
       };
 
       enum EState { Uninitialised, Initialising, Initialised };
@@ -161,12 +162,12 @@ namespace pcx
       typedef std::unordered_map<std::type_index, TypedDataSetT> TypedDataDepenencyContainer;
 
       template <typename TService, typename TFactory, typename TDeleter>
-      static ServiceInfoT CreateDataHolder(TFactory factory, TDeleter deleter)
+      static ServiceInfoT createDataHolder(TFactory factory, TDeleter deleter)
       {
          struct TypedInitialiser : public Initialiser
          {
             TypedInitialiser(TFactory factory) : factory_(factory) { }
-            virtual void* Initialise(ServiceRegistry& services) { return factory_(services); }
+            virtual void* initialise(ServiceRegistry& services) override { return factory_(services); }
             TFactory factory_;
          };
 
@@ -174,24 +175,24 @@ namespace pcx
          {
             TDeleter deleter_;
             TypedDeleter(TDeleter deleter) : deleter_(deleter) { }
-            virtual void Delete(void* ptr) { deleter_(static_cast<TService*>(ptr)); }
+            virtual void destroy(void* ptr) override { deleter_(static_cast<TService*>(ptr)); }
          };
 
          return ServiceInfoT(nullptr, new TypedInitialiser(factory), new TypedDeleter(deleter), typeid(TService).name(), Uninitialised);
       }
 
       template <typename TService>
-      static TService* GetDataHolderData(ServiceInfoT& dataHolder)
+      static TService* getDataHolderData(ServiceInfoT& dataHolder)
       {
          return static_cast<TService*>(std::get<0>(dataHolder));
       }
 
-      static void DeleteDataHolder(ServiceInfoT& dataHolder)
+      static void deleteDataHolder(ServiceInfoT& dataHolder)
       {
          auto ptr = std::get<0>(dataHolder);
          auto locator = std::get<1>(dataHolder);
          auto deleter = std::get<2>(dataHolder);
-         deleter->Delete(ptr);
+         deleter->destroy(ptr);
 
          // ignore 'abstract but non-virtual destructor' for Deleter and Initialiser
          // - we know what we're doing
@@ -208,4 +209,4 @@ namespace pcx
 
 } // namespace pcx
 
-#endif // #ifndef PCX_SERVICE_LOCATOR_H
+#endif // #ifndef PCX_SERVICE_REGISTRY_H

@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(sample-lib)
 
-include(${CMAKE_SOURCE_DIR}/cmake/Config.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/ConfigLib.cmake)
 
 set(SRCROOT ${PROJECT_SOURCE_DIR})
 set(HDRROOT ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME})
