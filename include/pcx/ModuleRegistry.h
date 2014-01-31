@@ -6,7 +6,7 @@
 #include <pcx/Configuration.h>
 #include <pcx/ServiceRegistry.h>
 
-#include <pcx/impl/BaseDependencyContainer.h>
+#include <pcx/impl/BaseLazyFactory.h>
 
 namespace pcx
 {
@@ -35,7 +35,7 @@ namespace pcx
     *  - starting them up, shutting them down, restarting them
     *  - providing a mechanism to express module dependencies (startup order)
     */
-   class ModuleRegistry : public BaseDependencyContainer<ModuleRegistry, std::string> {
+   class ModuleRegistry : public BaseLazyFactory<ModuleRegistry, std::string> {
    public:
       ~ModuleRegistry();
 
@@ -66,12 +66,15 @@ namespace pcx
       template <typename ModuleT>
       Registration add(std::unique_ptr<ModuleT> module, std::string name);
 
+      template <typename ModuleT>
+      ModuleT & find();
+
       void addDependency(std::string dependent, std::string dependsOn);
 
    private:
-      friend class BaseDependencyContainer;
+      friend class BaseLazyFactory;
 
-      virtual void initialiseObjectDependencies(std::string objectId)
+      void initialiseObjectDependencies(std::string objectId)
       {
          auto & dependencies = moduleDependencies_[objectId];
 
@@ -91,6 +94,8 @@ namespace pcx
       template <typename ObjectT>
       ObjectT* createObject(std::string objectId)
       {
+         initialiseObjectDependencies(objectId);
+
          LOG(debug) << "Creating instance of module '" << objectId << "'";
          auto * module = new ObjectT();
          modules_.push_back(static_cast<Module*>(module));
@@ -146,6 +151,12 @@ namespace pcx
       addModuleName(name);
       addObject<ModuleT>(std::move(module), name);
       return Registration(*this, name);
+   }
+
+   template <typename ModuleT>
+   ModuleT & ModuleRegistry::find()
+   {
+      return findObject<ModuleT>();
    }
 
 } // namespace game

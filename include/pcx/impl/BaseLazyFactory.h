@@ -17,21 +17,19 @@
 namespace pcx
 {
    /**
-    * @brief The BaseDependencyContainer class encapsulates functionality relating to
+    * @brief The BaseLazyFactory class encapsulates functionality relating to
     * on-demand object initialisation.
-    * All objects added must have an identifier. Prior to object initialisation an
-    * abstract method initialiseObjectDependencies(id) will be called indicating which object
-    * is being initialised.
+    * All objects added must have an identifier. When required the inheriting class
+    * will be required to create the requisite object via the createObject<T>(id)
+    * method.
     *
     * Use like this:
     * class MyContainer : public BaseDependencyContainer<MyContainer, std::string> {
-    *    void initialiseObjectDependencies(std::string objectId) {
-    *       // ensure dependencies are initialised by calling findObject() on them?
-    *    }
-    *
     *    template <typename ObjectT>
     *    ObjectT* createObject(std::string id) {
     *       // create object of type ObjectT for this container
+    *       // perhaps ensuring dependencies are met by calling
+    *       // initialiseObject(id)
     *    }
     * };
     *
@@ -40,15 +38,13 @@ namespace pcx
     * cont.add<MyOtherService>("svc2");
     *
     * cont.findObject<MyService>();
-    * // will invoke:
-    * //   - initialiseObjectDependencies("svc1")
-    * //   - MyService ctor with 'MyContainer& container'
+    * // will invoke MyContainer::createObject<MyService>("svc1")
     */
    template <typename ContainerT, typename IdentifierT>
-   class BaseDependencyContainer
+   class BaseLazyFactory
    {
-   public:
-      virtual ~BaseDependencyContainer();
+   protected:
+      virtual ~BaseLazyFactory();
 
       template <typename ObjectT>
       void addObject(IdentifierT objectId)
@@ -104,13 +100,13 @@ namespace pcx
       }
 
       template <typename ObjectT>
-      ObjectT * findObject()
+      ObjectT & findObject()
       {
-         return static_cast<ObjectT*>(findObjectImpl(typeid(ObjectT)));
+         return *static_cast<ObjectT*>(findObjectImpl(typeid(ObjectT)));
       }
 
       template <typename ObjectT>
-      ObjectT * findObject(IdentifierT id)
+      ObjectT & findObject(IdentifierT id)
       {
          auto typeIndex = getTypeForId(id);
 
@@ -120,19 +116,13 @@ namespace pcx
                demangle_name(typeIndex.name()) + "', expected '" +
                demangle_name(typeid(ObjectT).name()) + "'");
 
-         return static_cast<ObjectT*>(findObjectImpl(typeIndex));
+         return *static_cast<ObjectT*>(findObjectImpl(typeIndex));
       }
 
       void initialiseObject(IdentifierT id)
       {
          auto typeIndex = getTypeForId(id);
          findObjectImpl(typeIndex);
-      }
-
-      template <typename ObjectT>
-      bool exists() const
-      {
-         return exists<ObjectT>(typeid(ObjectT));
       }
 
    private:
@@ -149,8 +139,6 @@ namespace pcx
       enum EState { Uninitialised, Initialising, Initialised };
       typedef std::tuple<void*, Initialiser*, Deleter*, std::string, EState, IdentifierT> ObjectInfoT;
       typedef std::unordered_map<std::type_index, ObjectInfoT> TypedDataContainer;
-
-      virtual void initialiseObjectDependencies(IdentifierT objectId) = 0;
 
       void initialiseImpl(std::type_index const & typeIndex);
 
@@ -194,12 +182,6 @@ namespace pcx
          if (nullptr == object) throw std::runtime_error(std::string("Cannot find object of type '") + demangle_name(typeIndex.name()) + "' - object has not yet been initialised");
 
          return object;
-      }
-
-      template <typename ObjectT>
-      bool exists(std::type_info const & typeInfo) const
-      {
-         return typedData_.find(typeInfo) != typedData_.end();
       }
 
       template <typename ObjectT, typename TFactory, typename TDeleter>
@@ -275,7 +257,7 @@ namespace pcx
    //
 
    template <typename ContainerT, typename IdentifierT>
-   BaseDependencyContainer<ContainerT, IdentifierT>::~BaseDependencyContainer()
+   BaseLazyFactory<ContainerT, IdentifierT>::~BaseLazyFactory()
    {
       auto it = typedData_.begin();
       auto itEnd = typedData_.end();
@@ -286,7 +268,7 @@ namespace pcx
    }
 
    template <typename ContainerT, typename IdentifierT>
-   void BaseDependencyContainer<ContainerT, IdentifierT>::initialiseImpl(std::type_index const & typeIndex)
+   void BaseLazyFactory<ContainerT, IdentifierT>::initialiseImpl(std::type_index const & typeIndex)
    {
       // ObjectInfoT members:
       //  - 0: data  (void*)
@@ -315,20 +297,18 @@ namespace pcx
       }
 
       //
-      // initialise dependencies
+      // initialise object
       //
 
       std::get<4>(dataHolder) = Initialising;
 
-      initialiseObjectDependencies(std::get<5>(dataHolder));
-
-      //
-      // initialise this object
-      //
-
       auto factory = std::get<1>(dataHolder);
       auto* newObject = factory->initialise();
       std::get<0>(dataHolder) = newObject;
+
+      //
+      // initialisation complete
+      //
 
       std::get<4>(dataHolder) = Initialised;
    }

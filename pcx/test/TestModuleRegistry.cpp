@@ -52,10 +52,10 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_different_registration_types )
       modules.add(refModule, "mod1");
       modules.add(std::unique_ptr<MockModule2>(new MockModule2(ptrDisposed)), "mod2");
       modules.add<MockModule3>("mod3");
-      modules.findObject<MockModule3>()->SetDisposeFlag(&registeredDisposed);
+      modules.find<MockModule3>().SetDisposeFlag(&registeredDisposed);
 
-      BOOST_CHECK(nullptr != modules.findObject<MockModule2>());
-      BOOST_CHECK(nullptr != modules.findObject<MockModule3>());
+      modules.find<MockModule2>();
+      modules.find<MockModule3>();
    }
    BOOST_CHECK(!refDisposed);
    BOOST_CHECK(ptrDisposed);
@@ -71,14 +71,14 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_simple )
 
    ModuleRegistry modules;
    modules.add<MockModule2>("mod2").withDependency("mod1");
-   modules.add(std::unique_ptr<MockModule1>(new MockModule1()));
+   modules.add(std::unique_ptr<MockModule1>(new MockModule1()), "mod1");
    modules.add<MockModule3>("mod3").withDependency("mod1");
    modules.add<MockModule4>("mod4").withDependency("mod2");
 
-   BOOST_CHECK(nullptr != modules.findObject<MockModule1>());
-   BOOST_CHECK(nullptr != modules.findObject<MockModule2>());
-   BOOST_CHECK(nullptr != modules.findObject<MockModule3>());
-   BOOST_CHECK(nullptr != modules.findObject<MockModule4>());
+   modules.find<MockModule1>();
+   modules.find<MockModule2>();
+   modules.find<MockModule3>();
+   modules.find<MockModule4>();
 }
 
 BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_failure )
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_failure )
    try
    {
       // MockModule1 dependency not yet satisfied
-      modules.findObject<MockModule2>();
+      modules.find<MockModule2>();
       BOOST_CHECK(false);
    }
    catch (...)
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_cycle )
    try
    {
       // not yet registered
-      modules.findObject<MockModule1>();
+      modules.find<MockModule1>();
       BOOST_CHECK(false);
    }
    catch (...)
@@ -155,12 +155,12 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_ordering )
    modules.add<MockModule1>("mod1");
    modules.add<MockModule5>("mod5").withDependency("mod4");
 
-   modules.findObject<MockModule3>();
+   modules.find<MockModule3>();
    BOOST_CHECK(counter == 3);
 
-   modules.findObject<MockModule4>();
+   modules.find<MockModule4>();
    BOOST_CHECK(counter == 4);
-   modules.findObject<MockModule5>();
+   modules.find<MockModule5>();
    BOOST_CHECK(counter == 5);
 }
 

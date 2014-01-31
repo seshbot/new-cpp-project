@@ -30,8 +30,7 @@ set(SOURCES
 set(IMPL_SOURCES
    ${SRCROOT}/impl/FileConfiguration.h
    ${SRCROOT}/impl/FileConfiguration.cpp
-   ${HDRROOT}/impl/BaseDependencyContainer.h
-   #${SRCROOT}/impl/BaseDependencyContainer.cpp
+   ${HDRROOT}/impl/BaseLazyFactory.h
    )
 
 add_library(pcx ${SOURCES} ${IMPL_SOURCES})

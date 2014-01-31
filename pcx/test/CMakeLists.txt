@@ -17,7 +17,7 @@ set(TESTSOURCES
     TestMessageBus.cpp
     TestModuleRegistry.cpp
     TestServiceRegistry.cpp
-    TestBaseDependencyContainer.cpp
+    TestBaseLazyFactory.cpp
    )
 
 add_executable(test-pcx ${TESTSOURCES})
