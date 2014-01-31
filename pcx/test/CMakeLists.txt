@@ -15,7 +15,9 @@ include_directories("${CMAKE_SOURCE_DIR}/include")
 set(TESTSOURCES
     TestMain.cpp
     TestMessageBus.cpp
+    TestModuleRegistry.cpp
     TestServiceRegistry.cpp
+    TestBaseDependencyContainer.cpp
    )
 
 add_executable(test-pcx ${TESTSOURCES})

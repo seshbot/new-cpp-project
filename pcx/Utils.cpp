@@ -16,7 +16,9 @@ namespace pcx
            std::string ret;
            int status = 0;
            char* demang = abi::__cxa_demangle(name.c_str(), NULL, 0, &status);
-           BOOST_ASSERT(!status);
+           if (status) return name; // TODO: why does this fail sometimes?
+
+           BOOST_ASSERT_MSG(!status, name.c_str());
 
            try
            {

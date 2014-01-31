@@ -1,6 +1,6 @@
 #include <pcx/Configuration.h>
 
-#include "configurations/FileConfiguration.h"
+#include "impl/FileConfiguration.h"
 
 namespace pcx
 {

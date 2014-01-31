@@ -8,6 +8,8 @@ using namespace boost::unit_test;
 
 using namespace pcx;
 
+BOOST_AUTO_TEST_SUITE( ServiceRegistrySuite )
+
 BOOST_AUTO_TEST_CASE( overFillPool )
 {
    auto list = IndexPool(10);
@@ -232,3 +234,4 @@ BOOST_AUTO_TEST_CASE( ServiceRegistry_dep_ordering )
    BOOST_CHECK(counter == 5);
 }
 
+BOOST_AUTO_TEST_SUITE_END()

@@ -6,6 +6,28 @@
 #include <pcx/ModuleRegistry.h>
 #include <pcx/ServiceRegistry.h>
 
+namespace
+{
+   struct RenderModule : public pcx::Module
+   {
+      virtual void startup(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+      virtual void shutdown() {}
+      virtual void restart(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+
+      virtual void update(double timeSinceLast) {}
+   };
+
+   struct UserControlModule : public pcx::Module
+   {
+      virtual void startup(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+      virtual void shutdown() {}
+      virtual void restart(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+
+      virtual void update(double timeSinceLast) {}
+   };
+}
+
+
 int main(int argc, char* argv[])
 {
    (void)argc; (void)argv; // avoid 'unreferenced formal parameter' warnings
@@ -17,6 +39,10 @@ int main(int argc, char* argv[])
       auto config = pcx::createFileConfiguration("client.cfg");
       pcx::ModuleRegistry modules {};
       pcx::ServiceRegistry services {};
+
+      modules.add<RenderModule>("render");
+      modules.add<UserControlModule>("user-control").withDependency("render");
+
       modules.startup(*config, services);
    }
    catch (std::exception & ex)

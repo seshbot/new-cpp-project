@@ -178,7 +178,7 @@ namespace pcx
             virtual void destroy(void* ptr) override { deleter_(static_cast<TService*>(ptr)); }
          };
 
-         return ServiceInfoT(nullptr, new TypedInitialiser(factory), new TypedDeleter(deleter), typeid(TService).name(), Uninitialised);
+         return ServiceInfoT(nullptr, new TypedInitialiser(factory), new TypedDeleter(deleter), demangle_name(typeid(TService).name()), Uninitialised);
       }
 
       template <typename TService>

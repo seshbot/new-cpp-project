@@ -28,10 +28,10 @@ set(SOURCES
    )
 
 set(IMPL_SOURCES
-   ${SRCROOT}/configurations/FileConfiguration.h
-   ${SRCROOT}/configurations/FileConfiguration.cpp
-   ${SRCROOT}/impl/TypedObjectRegistry.cpp
-   ${HDRROOT}/impl/TypedObjectRegistry.h
+   ${SRCROOT}/impl/FileConfiguration.h
+   ${SRCROOT}/impl/FileConfiguration.cpp
+   ${HDRROOT}/impl/BaseDependencyContainer.h
+   #${SRCROOT}/impl/BaseDependencyContainer.cpp
    )
 
 add_library(pcx ${SOURCES} ${IMPL_SOURCES})

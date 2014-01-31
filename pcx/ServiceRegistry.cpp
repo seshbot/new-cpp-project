@@ -1,8 +1,6 @@
 #include <pcx/ServiceRegistry.h>
 #include <pcx/Logging.h>
 
-#include <boost/lexical_cast.hpp>
-
 
 namespace pcx
 {

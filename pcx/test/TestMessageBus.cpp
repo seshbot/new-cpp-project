@@ -7,6 +7,8 @@ using namespace boost::unit_test;
 
 using namespace pcx;
 
+BOOST_AUTO_TEST_SUITE( MessageBusSuite )
+
 BOOST_AUTO_TEST_CASE( basicSubPub )
 {
    struct Event1 { int num; Event1(int n) : num(n) { } };
@@ -27,3 +29,5 @@ BOOST_AUTO_TEST_CASE( basicSubPub )
    BOOST_CHECK( called );
    BOOST_CHECK( calledNum == 10 );
 }
+
+BOOST_AUTO_TEST_SUITE_END()
