@@ -2,6 +2,7 @@
 #define PCX_MODULE_REGISTRY_H
 
 #include <vector>
+#include <set>
 #include <pcx/Logging.h>
 #include <pcx/Configuration.h>
 #include <pcx/ServiceRegistry.h>
@@ -20,9 +21,9 @@ namespace pcx
    public:
       virtual ~Module() {}
 
-      virtual void startup(IConfiguration const & config, ServiceRegistry const & services) {}
+      virtual void startup(IConfiguration const & config, ServiceRegistry & services) {}
       virtual void shutdown() {}
-      virtual void restart(IConfiguration const & config, ServiceRegistry const & services) {}
+      virtual void restart(IConfiguration const & config, ServiceRegistry & services) {}
 
       virtual void update(double timeSinceLast) {}
    };
@@ -72,50 +73,28 @@ namespace pcx
       void addDependency(std::string dependent, std::string dependsOn);
 
    private:
-      friend class BaseLazyFactory;
+      typedef std::set<std::string> ModuleIdCollectionT;
+      typedef std::unordered_map<std::string, ModuleIdCollectionT> ModuleDependenciesMapT;
 
-      void initialiseObjectDependencies(std::string objectId)
-      {
-         auto & dependencies = moduleDependencies_[objectId];
-
-         if (dependencies.size() > 0)
-         {
-            LOG(debug)
-               << "Initialising " << dependencies.size()
-               << " dependencies for module '" << objectId << "'";
-         }
-
-         for (auto dependsOn : dependencies)
-         {
-            initialiseObject(dependsOn);
-         }
-      }
-
-      template <typename ObjectT>
-      ObjectT* createObject(std::string objectId)
-      {
-         initialiseObjectDependencies(objectId);
-
-         LOG(debug) << "Creating instance of module '" << objectId << "'";
-         auto * module = new ObjectT();
-         modules_.push_back(static_cast<Module*>(module));
-         return module;
-      }
-
-      void addModuleName(std::string name)
-      {
-         if (moduleIds_.find(name) != moduleIds_.end())
-            throw std::runtime_error(std::string("Cannot register module '") + name + "' - a module with that name is already registered");
-
-         moduleIds_.insert(name);
-      }
-
+      ModuleIdCollectionT moduleIds_;
+      ModuleDependenciesMapT moduleDependencies_;
       std::vector<Module*> modules_;
 
-      typedef std::unordered_set<std::string> ModuleIdSetT;
-      ModuleIdSetT moduleIds_;
-      typedef std::unordered_map<std::string, ModuleIdSetT> ModuleDependenciesMapT;
-      ModuleDependenciesMapT moduleDependencies_;
+      void addModuleName(std::string name);
+
+      void initialiseObjectDependencies(std::string objectId, void * context);
+
+      struct StartupParams {
+         IConfiguration const & config;
+         ServiceRegistry & services;
+      };
+
+      friend class BaseLazyFactory;
+
+      template <typename ObjectT>
+      ObjectT* createObjectCallback(std::string objectId, void * context);
+      template <typename ObjectT>
+      void initialiseObjectCallback(ObjectT & object, std::string objectId, void * context);
    };
 
    //
@@ -157,6 +136,27 @@ namespace pcx
    ModuleT & ModuleRegistry::find()
    {
       return findObject<ModuleT>();
+   }
+
+   template <typename ObjectT>
+   ObjectT* ModuleRegistry::createObjectCallback(std::string objectId, void * context)
+   {
+      initialiseObjectDependencies(objectId, context);
+
+      LOG(debug) << "Creating instance of module '" << objectId << "'";
+      auto * module = new ObjectT();
+      return module;
+   }
+
+   template <typename ObjectT>
+   void ModuleRegistry::initialiseObjectCallback(ObjectT & object, std::string objectId, void * context)
+   {
+      LOG(debug) << "Starting up module '" << objectId << "'";
+
+      StartupParams & startupParams = *reinterpret_cast<StartupParams*>(context);
+      object.startup(startupParams.config, startupParams.services);
+
+      modules_.push_back(&object);
    }
 
 } // namespace game

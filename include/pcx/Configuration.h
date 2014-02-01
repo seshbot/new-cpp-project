@@ -84,6 +84,7 @@ namespace pcx
    // factory functions
    //
 
+   std::unique_ptr<IConfiguration> createEmptyConfiguration();
    std::unique_ptr<IConfiguration> createFileConfiguration(std::string filename);
 
 } // namespace pcx

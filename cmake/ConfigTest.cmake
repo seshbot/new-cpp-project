@@ -4,10 +4,6 @@
 #
 
 # boost
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-find_package(Threads)
-find_package(Boost 1.55.0 COMPONENTS log log_setup thread date_time filesystem system unit_test_framework test_exec_monitor REQUIRED)
 if(Boost_FOUND)
    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
    link_libraries(${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})

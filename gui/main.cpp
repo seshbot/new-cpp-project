@@ -10,18 +10,18 @@ namespace
 {
    struct RenderModule : public pcx::Module
    {
-      virtual void startup(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+      virtual void startup(pcx::IConfiguration const & config, pcx::ServiceRegistry & services) {}
       virtual void shutdown() {}
-      virtual void restart(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+      virtual void restart(pcx::IConfiguration const & config, pcx::ServiceRegistry & services) {}
 
       virtual void update(double timeSinceLast) {}
    };
 
    struct UserControlModule : public pcx::Module
    {
-      virtual void startup(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+      virtual void startup(pcx::IConfiguration const & config, pcx::ServiceRegistry & services) {}
       virtual void shutdown() {}
-      virtual void restart(pcx::IConfiguration const & config, pcx::ServiceRegistry const & services) {}
+      virtual void restart(pcx::IConfiguration const & config, pcx::ServiceRegistry & services) {}
 
       virtual void update(double timeSinceLast) {}
    };

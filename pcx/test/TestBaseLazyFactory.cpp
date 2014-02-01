@@ -13,16 +13,23 @@ using namespace pcx;
 
 namespace
 {
-   struct TestContainer : public BaseLazyFactory<TestContainer, std::string>
+   struct TestFactory : public BaseLazyFactory<TestFactory, std::string>
    {
       std::function<void()> initialiseObjectDependenciesCallback;
       std::vector<std::string> constructedIds;
+      std::vector<std::string> initialisedIds;
 
       template <typename ObjectT>
-      ObjectT* createObject(std::string id)
+      ObjectT* createObjectCallback(std::string id, void*)
       {
          constructedIds.push_back(id);
          return new ObjectT();
+      }
+
+      template <typename ObjectT>
+      void initialiseObjectCallback(ObjectT&, std::string id, void*)
+      {
+         initialisedIds.push_back(id);
       }
 
       bool idWasConstructed(std::string objectId)
@@ -34,12 +41,22 @@ namespace
          return false;
       }
 
+      bool idWasInitialised(std::string objectId)
+      {
+         for (auto id : initialisedIds)
+         {
+            if (id == objectId) return true;
+         }
+         return false;
+      }
+
       using BaseLazyFactory::addObject;
+      using BaseLazyFactory::initialiseObject;
       using BaseLazyFactory::findObject;
    };
 }
 
-BOOST_AUTO_TEST_CASE( ObjectContainer_different_registration_types )
+BOOST_AUTO_TEST_CASE( LazyFactory_different_registration_types )
 {
    bool ptrDisposed = false;
    bool refDisposed = false;
@@ -70,10 +87,15 @@ BOOST_AUTO_TEST_CASE( ObjectContainer_different_registration_types )
    MockService1 refService(refDisposed);
 
    {
-      TestContainer container;
+      TestFactory container;
       container.addObject(refService, "ref1");
       container.addObject(std::unique_ptr<MockService2>(new MockService2(ptrDisposed)), "ref2");
       container.addObject<MockService3>("ref3");
+
+      container.initialiseObject("ref3", nullptr);
+      container.initialiseObject("ref2", nullptr);
+      container.initialiseObject("ref1", nullptr);
+
       container.findObject<MockService3>().SetDisposeFlag(&registeredDisposed);
 
       container.findObject<MockService2>();
@@ -82,6 +104,10 @@ BOOST_AUTO_TEST_CASE( ObjectContainer_different_registration_types )
       BOOST_CHECK(!container.idWasConstructed("ref1"));
       BOOST_CHECK(!container.idWasConstructed("ref2"));
       BOOST_CHECK(container.idWasConstructed("ref3"));
+
+      BOOST_CHECK(container.idWasInitialised("ref1"));
+      BOOST_CHECK(container.idWasInitialised("ref2"));
+      BOOST_CHECK(container.idWasInitialised("ref3"));
    }
    BOOST_CHECK(!refDisposed);
    BOOST_CHECK(ptrDisposed);

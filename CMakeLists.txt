@@ -18,6 +18,22 @@ configure_file (
 
 install (FILES "${PROJECT_BINARY_DIR}/Config.h" DESTINATION include)
 
+
+#
+# common dependent libraries
+#
+
+# boost
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+find_package(Threads)
+find_package(Boost 1.55.0 COMPONENTS log log_setup thread date_time filesystem system unit_test_framework test_exec_monitor REQUIRED)
+if(Boost_FOUND)
+else(Boost_FOUND)
+   message(FATAL_ERROR "Cannot build without Boost. Please set Boost_DIR.")
+endif(Boost_FOUND)
+
+
 #
 # child projects
 #

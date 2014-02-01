@@ -20,22 +20,30 @@ namespace pcx
     * @brief The BaseLazyFactory class encapsulates functionality relating to
     * on-demand object initialisation.
     * All objects added must have an identifier. When required the inheriting class
-    * will be required to create the requisite object via the createObject<T>(id)
-    * method.
+    * will be required to create and then initialise the requisite object via the
+    * createObjectCallback<T>(id, ctx) and initialiseObjectCallback(obj, id, ctx) methods.
     *
     * Use like this:
     * class MyContainer : public BaseDependencyContainer<MyContainer, std::string> {
     *    template <typename ObjectT>
-    *    ObjectT* createObject(std::string id) {
+    *    ObjectT* createObjectCallback(std::string id, void* context) {
+    *       // only called for non-existent objects (addObject<T>(), not addObject<T>(obj))
     *       // create object of type ObjectT for this container
     *       // perhaps ensuring dependencies are met by calling
-    *       // initialiseObject(id)
+    *       // initialiseObject(id, context)
+    *    }
+    *    template <typename ObjectT>
+    *    ObjectT* initialiseObjectCallback(ObjectT & object, std::string id, void* context) {
+    *       // called for all objects in dependency order
+    *       // context contains whatever information was passed into initialiseObject(id, ctx)
     *    }
     * };
     *
     * MyContainer cont;
-    * cont.add<MyService>("svc1");
-    * cont.add<MyOtherService>("svc2");
+    * cont.addObject<MyService>("svc1");
+    * cont.addObject<MyOtherService>("svc2");
+    *
+    * cont.initialiseObject("svc1", nullptr);
     *
     * cont.findObject<MyService>();
     * // will invoke MyContainer::createObject<MyService>("svc1")
@@ -51,9 +59,11 @@ namespace pcx
       {
          auto * container = static_cast<ContainerT*>(this);
          addObjectImpl<ObjectT>(objectId,
-            [=]()
+            [=](void * context)
             {
-               return container->template createObject<ObjectT>(objectId);
+               auto * newObject = container->template createObjectCallback<ObjectT>(objectId, context);
+               container->template initialiseObjectCallback<ObjectT>(*newObject, objectId, context);
+               return newObject;
             },
             [=](ObjectT* object)
             {
@@ -64,10 +74,12 @@ namespace pcx
       template <typename ObjectT>
       void addObject(ObjectT & object, IdentifierT objectId)
       {
+         auto * container = static_cast<ContainerT*>(this);
          ObjectT* objectPtr = &object;
          addObjectImpl<ObjectT>(objectId,
-            [=]()
+            [=](void * context)
             {
+               container->template initialiseObjectCallback<ObjectT>(*objectPtr, objectId, context);
                return objectPtr;
             },
             [=](ObjectT* object)
@@ -79,12 +91,14 @@ namespace pcx
       template <typename ObjectT>
       void addObject(std::unique_ptr<ObjectT> object, IdentifierT objectId)
       {
+         auto * container = static_cast<ContainerT*>(this);
          ObjectT* rawPtr = object.release();
          try
          {
             addObjectImpl<ObjectT>(objectId,
-               [=]()
+               [=](void * context)
                {
+                  container->template initialiseObjectCallback<ObjectT>(*rawPtr, objectId, context);
                   return rawPtr;
                },
                [](ObjectT* object)
@@ -119,16 +133,16 @@ namespace pcx
          return *static_cast<ObjectT*>(findObjectImpl(typeIndex));
       }
 
-      void initialiseObject(IdentifierT id)
+      void initialiseObject(IdentifierT id, void * context)
       {
          auto typeIndex = getTypeForId(id);
-         findObjectImpl(typeIndex);
+         initialiseObjectImpl(typeIndex, context);
       }
 
    private:
       struct Initialiser
       {
-         virtual void* initialise() = 0;
+         virtual void* initialise(void * context) = 0;
       };
 
       struct Deleter
@@ -140,7 +154,7 @@ namespace pcx
       typedef std::tuple<void*, Initialiser*, Deleter*, std::string, EState, IdentifierT> ObjectInfoT;
       typedef std::unordered_map<std::type_index, ObjectInfoT> TypedDataContainer;
 
-      void initialiseImpl(std::type_index const & typeIndex);
+      void initialiseObjectImpl(std::type_index const & typeIndex, void * context);
 
       template <typename ObjectT, typename TFactory, typename TDeleter>
       void addObjectImpl(IdentifierT objectId, TFactory factory, TDeleter deleter)
@@ -175,9 +189,6 @@ namespace pcx
             throw std::runtime_error((std::string("Object '") + demangle_name(typeIndex.name()) + std::string("' not registered")).c_str());
          }
 
-         // won't do anything if already initialised
-         initialiseImpl(typeIndex);
-
          auto* object = getDataHolderData(typedData_[typeIndex]);
          if (nullptr == object) throw std::runtime_error(std::string("Cannot find object of type '") + demangle_name(typeIndex.name()) + "' - object has not yet been initialised");
 
@@ -190,7 +201,7 @@ namespace pcx
          struct TypedInitialiser : public Initialiser
          {
             TypedInitialiser(TFactory factory) : factory_(factory) { }
-            virtual void* initialise() { return factory_(); }
+            virtual void* initialise(void * context) { return factory_(context); }
             TFactory factory_;
          };
 
@@ -268,7 +279,7 @@ namespace pcx
    }
 
    template <typename ContainerT, typename IdentifierT>
-   void BaseLazyFactory<ContainerT, IdentifierT>::initialiseImpl(std::type_index const & typeIndex)
+   void BaseLazyFactory<ContainerT, IdentifierT>::initialiseObjectImpl(std::type_index const & typeIndex, void * context)
    {
       // ObjectInfoT members:
       //  - 0: data  (void*)
@@ -303,7 +314,7 @@ namespace pcx
       std::get<4>(dataHolder) = Initialising;
 
       auto factory = std::get<1>(dataHolder);
-      auto* newObject = factory->initialise();
+      auto* newObject = factory->initialise(context);
       std::get<0>(dataHolder) = newObject;
 
       //

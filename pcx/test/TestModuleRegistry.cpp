@@ -4,6 +4,8 @@ using namespace boost::unit_test;
 
 #include <set>
 #include <pcx/ModuleRegistry.h>
+#include <pcx/Configuration.h>
+#include <pcx/ServiceRegistry.h>
 
 using namespace pcx;
 
@@ -13,6 +15,10 @@ namespace
    {
 
    };
+
+   auto configPtr = createEmptyConfiguration();
+   auto & config = *configPtr;
+   ServiceRegistry services;
 }
 
 BOOST_AUTO_TEST_SUITE( ModuleRegistrySuite )
@@ -52,6 +58,9 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_different_registration_types )
       modules.add(refModule, "mod1");
       modules.add(std::unique_ptr<MockModule2>(new MockModule2(ptrDisposed)), "mod2");
       modules.add<MockModule3>("mod3");
+
+      modules.startup(config, services);
+
       modules.find<MockModule3>().SetDisposeFlag(&registeredDisposed);
 
       modules.find<MockModule2>();
@@ -75,6 +84,8 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_simple )
    modules.add<MockModule3>("mod3").withDependency("mod1");
    modules.add<MockModule4>("mod4").withDependency("mod2");
 
+   modules.startup(config, services);
+
    modules.find<MockModule1>();
    modules.find<MockModule2>();
    modules.find<MockModule3>();
@@ -93,7 +104,7 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_failure )
    try
    {
       // MockModule1 dependency not yet satisfied
-      modules.find<MockModule2>();
+      modules.startup(config, services);
       BOOST_CHECK(false);
    }
    catch (...)
@@ -115,7 +126,7 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_cycle )
    try
    {
       // not yet registered
-      modules.find<MockModule1>();
+      modules.startup(config, services);
       BOOST_CHECK(false);
    }
    catch (...)
@@ -125,26 +136,37 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_cycle )
 
 BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_ordering )
 {
-   static int counter = 0;
-   struct MockModule2 : public TestModule { MockModule2()
+   static std::set<int> startedUpModules;
+   static auto isStartedUp = [&](int module)
    {
-      BOOST_CHECK(++counter == 2);
+      return startedUpModules.find(module) != startedUpModules.end();
+   };
+
+   struct MockModule2 : public TestModule { virtual void startup(IConfiguration const &, ServiceRegistry &)
+   {
+      BOOST_CHECK(isStartedUp(1));
+      BOOST_CHECK(!isStartedUp(3));
+      startedUpModules.insert(2);
    }};
-   struct MockModule5 : public TestModule { MockModule5()
+   struct MockModule5 : public TestModule { virtual void startup(IConfiguration const &, ServiceRegistry &)
    {
-      BOOST_CHECK(++counter == 5);
+      BOOST_CHECK(isStartedUp(4));
+      startedUpModules.insert(5);
    }};
-   struct MockModule1 : public TestModule { MockModule1()
+   struct MockModule1 : public TestModule { virtual void startup(IConfiguration const &, ServiceRegistry &)
    {
-      BOOST_CHECK(++counter == 1);
+      BOOST_CHECK(!isStartedUp(2));
+      startedUpModules.insert(1);
    }};
-   struct MockModule4 : public TestModule { MockModule4()
+   struct MockModule4 : public TestModule { virtual void startup(IConfiguration const &, ServiceRegistry &)
    {
-      BOOST_CHECK(++counter == 4);
+      BOOST_CHECK(!isStartedUp(5));
+      startedUpModules.insert(4);
    }};
-   struct MockModule3 : public TestModule { MockModule3()
+   struct MockModule3 : public TestModule { virtual void startup(IConfiguration const &, ServiceRegistry &)
    {
-      BOOST_CHECK(++counter == 3);
+      BOOST_CHECK(isStartedUp(2));
+      startedUpModules.insert(3);
    }};
 
    // deps 3->2->1  5->4
@@ -155,13 +177,9 @@ BOOST_AUTO_TEST_CASE( ModuleRegistry_dep_ordering )
    modules.add<MockModule1>("mod1");
    modules.add<MockModule5>("mod5").withDependency("mod4");
 
-   modules.find<MockModule3>();
-   BOOST_CHECK(counter == 3);
+   modules.startup(config, services);
 
-   modules.find<MockModule4>();
-   BOOST_CHECK(counter == 4);
-   modules.find<MockModule5>();
-   BOOST_CHECK(counter == 5);
+   BOOST_CHECK(startedUpModules.size() == 5);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
