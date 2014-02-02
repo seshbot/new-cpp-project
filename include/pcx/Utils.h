@@ -11,4 +11,9 @@ namespace pcx
 
 } // namespace pcx
 
+namespace std
+{
+   std::ostream & operator<<(std::ostream & stream, std::type_index const & t);
+}
+
 #endif // #ifndef PCX_UTILS_H

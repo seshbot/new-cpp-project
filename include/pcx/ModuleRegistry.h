@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <set>
+#include <unordered_map>
+
 #include <pcx/Logging.h>
 #include <pcx/Configuration.h>
 #include <pcx/ServiceRegistry.h>
@@ -92,7 +94,7 @@ namespace pcx
       friend class BaseLazyFactory;
 
       template <typename ObjectT>
-      ObjectT* createObjectCallback(std::string objectId, void * context);
+      ObjectT* createObjectCallback(std::string objectId);
       template <typename ObjectT>
       void initialiseObjectCallback(ObjectT & object, std::string objectId, void * context);
    };
@@ -139,10 +141,8 @@ namespace pcx
    }
 
    template <typename ObjectT>
-   ObjectT* ModuleRegistry::createObjectCallback(std::string objectId, void * context)
+   ObjectT* ModuleRegistry::createObjectCallback(std::string objectId)
    {
-      initialiseObjectDependencies(objectId, context);
-
       LOG(debug) << "Creating instance of module '" << objectId << "'";
       auto * module = new ObjectT();
       return module;
@@ -152,6 +152,8 @@ namespace pcx
    void ModuleRegistry::initialiseObjectCallback(ObjectT & object, std::string objectId, void * context)
    {
       LOG(debug) << "Starting up module '" << objectId << "'";
+
+      initialiseObjectDependencies(objectId, context);
 
       StartupParams & startupParams = *reinterpret_cast<StartupParams*>(context);
       object.startup(startupParams.config, startupParams.services);

@@ -123,10 +123,11 @@ BOOST_AUTO_TEST_CASE( ServiceRegistry_different_registration_types )
       services.add(refService);
       services.add(std::unique_ptr<MockService2>(new MockService2(ptrDisposed)));
       services.add<MockService3>();
-      services.findService<MockService3>()->SetDisposeFlag(&registeredDisposed);
+      services.find<MockService3>().SetDisposeFlag(&registeredDisposed);
 
-      BOOST_CHECK(nullptr != services.findService<MockService2>());
-      BOOST_CHECK(nullptr != services.findService<MockService3>());
+      // these should not throw
+      services.find<MockService2>();
+      services.find<MockService3>();
    }
    BOOST_CHECK(!refDisposed);
    BOOST_CHECK(ptrDisposed);
@@ -135,20 +136,23 @@ BOOST_AUTO_TEST_CASE( ServiceRegistry_different_registration_types )
 
 BOOST_AUTO_TEST_CASE( ServiceRegistry_simple )
 {
-   struct MockService1 { MockService1() { } };
+   struct MockService1 { };
    struct MockService2 { MockService2(ServiceRegistry& services) { } };
    struct MockService3 { MockService3(ServiceRegistry& services) { } };
    struct MockService4 { MockService4(ServiceRegistry& services) { } };
 
    ServiceRegistry services;
+
    services.add<MockService2>().dependsOn<MockService1>();
    services.add(std::unique_ptr<MockService1>(new MockService1()));
    services.add<MockService3>().dependsOn<MockService1>();
    services.add<MockService4>().dependsOn<MockService2>();
-   BOOST_CHECK(nullptr != services.findService<MockService1>());
-   BOOST_CHECK(nullptr != services.findService<MockService2>());
-   BOOST_CHECK(nullptr != services.findService<MockService3>());
-   BOOST_CHECK(nullptr != services.findService<MockService4>());
+
+   // should not throw
+   services.find<MockService1>();
+   services.find<MockService2>();
+   services.find<MockService3>();
+   services.find<MockService4>();
 }
 
 BOOST_AUTO_TEST_CASE( ServiceRegistry_dep_failure )
@@ -163,7 +167,7 @@ BOOST_AUTO_TEST_CASE( ServiceRegistry_dep_failure )
    try
    {
       // MockService1 dependency not yet satisfied
-      services.findService<MockService2>();
+      services.find<MockService2>();
       BOOST_CHECK(false);
    }
    catch (...)
@@ -185,7 +189,7 @@ BOOST_AUTO_TEST_CASE( ServiceRegistry_dep_cycle )
    try
    {
       // not yet registered
-      services.findService<MockService1>();
+      services.find<MockService1>();
       BOOST_CHECK(false);
    }
    catch (...)
@@ -225,12 +229,12 @@ BOOST_AUTO_TEST_CASE( ServiceRegistry_dep_ordering )
    services.add<MockService1>();
    services.add<MockService5>().dependsOn<MockService4>();
 
-   services.findService<MockService3>();
+   services.find<MockService3>();
    BOOST_CHECK(counter == 3);
 
-   services.findService<MockService4>();
+   services.find<MockService4>();
    BOOST_CHECK(counter == 4);
-   services.findService<MockService5>();
+   services.find<MockService5>();
    BOOST_CHECK(counter == 5);
 }
 

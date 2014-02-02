@@ -20,7 +20,7 @@ namespace
       std::vector<std::string> initialisedIds;
 
       template <typename ObjectT>
-      ObjectT* createObjectCallback(std::string id, void*)
+      ObjectT* createObjectCallback(std::string id)
       {
          constructedIds.push_back(id);
          return new ObjectT();

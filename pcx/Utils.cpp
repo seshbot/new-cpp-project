@@ -36,3 +36,11 @@ namespace pcx
 
 } // namespace pcx
 
+namespace std
+{
+   std::ostream & operator<<(std::ostream & stream, std::type_index const & t)
+   {
+      stream << pcx::demangle_name(t.name());
+      return stream;
+   }
+}
