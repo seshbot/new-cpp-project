@@ -11,6 +11,10 @@ set(HDRROOT ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME})
 #
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
+set(LOCAL_LINK_LIBRARIES
+    ${LOCAL_LINK_LIBRARIES}
+    sample
+   )
 
 set(SOURCES
    ${SRCROOT}/sample-app.cpp
@@ -18,7 +22,7 @@ set(SOURCES
 
 add_executable(sample-app ${SOURCES})
 
-target_link_libraries(sample-app sample)
+target_link_libraries(sample-app ${LOCAL_LINK_LIBRARIES})
 
 #
 # install

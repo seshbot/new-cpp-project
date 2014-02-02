@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.6)
 project(gui)
 
-include(${CMAKE_SOURCE_DIR}/cmake/ConfigApp.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/ConfigGuiApp.cmake)
 
 set(SRCROOT ${PROJECT_SOURCE_DIR})
 set(HDRROOT ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME})
@@ -11,6 +11,10 @@ set(HDRROOT ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME})
 #
 
 include_directories("${CMAKE_SOURCE_DIR}/include")
+set(LOCAL_LINK_LIBRARIES
+    ${LOCAL_LINK_LIBRARIES}
+    pcx
+   )
 
 set(SOURCES
    ${SRCROOT}/main.cpp
@@ -18,7 +22,7 @@ set(SOURCES
 
 add_executable(gui ${SOURCES})
 
-target_link_libraries (gui pcx)
+target_link_libraries (gui ${LOCAL_LINK_LIBRARIES})
 
 #
 # install

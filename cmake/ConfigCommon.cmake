@@ -1,3 +1,11 @@
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules" ${CMAKE_MODULE_PATH})
+
+# Enable debug symbols by default
+if(CMAKE_BUILD_TYPE STREQUAL "")
+  set(CMAKE_BUILD_TYPE Debug)
+endif()
+# (you can also set it on the command line: -D CMAKE_BUILD_TYPE=Release)
+
 #
 # standard compiler and linker settings
 #

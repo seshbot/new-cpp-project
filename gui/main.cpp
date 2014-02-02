@@ -6,6 +6,8 @@
 #include <pcx/ModuleRegistry.h>
 #include <pcx/ServiceRegistry.h>
 
+#include <SFML/Graphics.hpp>
+
 namespace
 {
    struct RenderModule : public pcx::Module
@@ -44,6 +46,18 @@ int main(int argc, char* argv[])
       modules.add<UserControlModule>("user-control").withDependency("render");
 
       modules.startup(*config, services);
+
+      sf::RenderWindow app(sf::VideoMode(800, 600), "sample-cpp-game-project");
+
+      while (app.isOpen()) {
+         sf::Event Event;
+         while (app.pollEvent(Event)) {
+            if (Event.type == sf::Event::Closed)
+               app.close();
+         }
+         app.clear(sf::Color::Black);
+         app.display();
+      }
    }
    catch (std::exception & ex)
    {
